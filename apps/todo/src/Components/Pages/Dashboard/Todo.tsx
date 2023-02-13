@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+// import { db } from "apps/todo/src/firebase-config";
 
 interface Todo {
   id: string;
@@ -29,7 +30,7 @@ const Todo: React.FC<Props> = ({ todo, toggleComplete, handleDelete, handleEdit}
   return (
     <div className="todo">
       <input
-        style={{ textDecoration: todo.completed ? "line-through" : "" }}
+        style={{ textDecoration: todo.completed ? "line-through" : "none" }}
         type="text"
         value={todo.title === "" ? newTitle : todo.title}
         className="list"

@@ -1,22 +1,46 @@
 import React,{useState,useEffect} from "react";
 import {db} from "../../../firebase-config"
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 
 export default function AddTodo() {
   const [title, setTitle] = useState("");
+  const [todos, setTodos] = useState([]);
+  // const newData : never[] = [];
+  // const Data : string[] = [];
+  let newData = [];
 
   const handleSubmit = async () => {
     // e.preventDefault();
     if (title !== "") {
-      await addDoc(collection(db, "todos"), {
-        title,
-        completed: false,
+      await addDoc(collection(db, "data"), {
+        'name':title,
       });
       setTitle("");
     }
   };
+
+  window.addEventListener('load',() => {
+    FetchData();
+  });
+
+  const FetchData = () => {
+    getDocs(collection(db, "data")).then(
+      (querySnapshot)=>{
+        newData = querySnapshot.docs.map((doc) => ({...doc.data() }));
+        setTodos(newData);
+        console.log(todos, newData);
+        }
+      );
+
+
+  }
+
+  useEffect(() => {
+      FetchData();
+  } , []);
+
   return (
-    <form onSubmit={handleSubmit}>
+    <div>
       <div className="input_container">
         <input
           type="text"
@@ -26,8 +50,8 @@ export default function AddTodo() {
         />
       </div>
       <div className="btn_container">
-        <button>Add</button>
+        <button onClick={handleSubmit}>Add</button>
       </div>
-    </form>
+    </div>
   );
 }
