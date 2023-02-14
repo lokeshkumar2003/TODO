@@ -1,13 +1,18 @@
 import React,{useState,useEffect} from "react";
-import {db} from "../../../firebase-config"
+import {db,app} from "../../../firebase-config"
 import { collection, addDoc, getDocs } from "firebase/firestore";
+
+
+type todostype={
+  name:"string",
+}
 
 export default function AddTodo() {
   const [title, setTitle] = useState("");
-  const [todos, setTodos] = useState([]);
+  const [todos, setTodos] = useState <todostype[]>([]);
   // const newData : never[] = [];
   // const Data : string[] = [];
-  let newData = [];
+  // let newData = [];
 
   const handleSubmit = async () => {
     // e.preventDefault();
@@ -26,7 +31,7 @@ export default function AddTodo() {
   const FetchData = () => {
     getDocs(collection(db, "data")).then(
       (querySnapshot)=>{
-        newData = querySnapshot.docs.map((doc) => ({...doc.data() }));
+        const newData = querySnapshot.docs.map((doc) => ({...doc.data() }));
         setTodos(newData);
         console.log(todos, newData);
         }
@@ -35,9 +40,13 @@ export default function AddTodo() {
 
   }
 
+
   useEffect(() => {
       FetchData();
+
   } , []);
+
+
 
   return (
     <div>
