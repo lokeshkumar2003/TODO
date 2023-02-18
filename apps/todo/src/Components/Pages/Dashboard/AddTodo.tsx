@@ -1,67 +1,47 @@
 import React,{useState,useEffect} from "react";
 import {db,app } from "../../../firebase-config"
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc , orderBy } from "firebase/firestore";
 // import firebase from 'firebase/app';
 import { getAuth , signOut } from "firebase/auth";
-
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import { auth } from "../../../firebase-config";
 import { doc, getDoc } from "firebase/firestore";
 // import { useEffect } from 'react';
+import {
+  query,
+  onSnapshot,
 
+  deleteDoc,
+} from 'firebase/firestore';
 
 type todostype={
   name:string,
+  completed: boolean ,
+  id:string
 }
 
 
 
 export default function AddTodo() {
   const [title, setTitle] = useState("");
+  const [updatedTitle , setUpdatedTitle] = useState(title);
   const [todos, setTodos] = useState <todostype[]>([]);
-
-  const [user, loading, error] = useAuthState(auth);
-  const navigate = useNavigate();
-
-  // const newData : never[] = [];
-  // const Data : string[] = [];
-  // let newData = [];
+  const [checked , setChecked] = useState(false);
+  const [edit, setEdit] = useState(false);
 
   const handleSubmit = async () => {
     // e.preventDefault();
     if (title !== "") {
       await addDoc(collection(db, "data"), {
         'name':title,
+        'completed': checked
       });
       setTitle("");
     }
   };
 
-
-
-  window.addEventListener('load',() => {
-    FetchData();
-  });
-
-  const FetchData = () => {
-     getDocs(collection(db, "data")).then(
-      (querySnapshot)=>{
-        const newData = querySnapshot.docs.map((doc) => ({ ...doc.data() })) as todostype[]
-        setTodos(newData);
-        console.log(newData);
-        }
-      );
-
-
-
-
-
-
-  }
-
   const handleLogout = () => {
-      // app.auth.logout();\
       const aut = getAuth();
       signOut(aut).then(() => {
         window.location = '/' as Location | (string & Location);
@@ -74,26 +54,68 @@ export default function AddTodo() {
       });
   }
 
+
+  const todoList: React.SetStateAction<todostype[]> = [];
+
   useEffect(() => {
-      FetchData();
+    const q = query(collection(db, 'data'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        return todoList.push({
+          ...doc.data(),
+          id: doc.id,
+          name: doc.data().name,
+          completed: doc.data().completed,
+        });
+      });
+      setTodos(todoList);
+      console.log(todoList);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  } , []);
 
-
-  // const handleEdit = () => {
+  // const deleteHandler = () => {
 
   // }
+
+  const deleteTodo = async (id:string) => {
+    await deleteDoc(doc(db, 'data', id));
+    setTodos(todos);
+    console.log('Deleted successfully')
+  };
+
+  const editTask = async () => {
+    setEdit(true);
+  }
+
+  const updateTask = async(id: string) => {
+    const taskDocRef = doc(db, 'data', id)
+    try{
+      await updateDoc(taskDocRef, {
+        title: updatedTitle,
+        completed: checked
+      });
+      setEdit(true);
+    } catch (err) {
+      alert(err)
+    }
+  }
 
 
   return (
       <>
             <div className="input_container">
-              <input
-                type="text"
-                placeholder="Enter todo..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+              {
+                <input
+                  type="text"
+                  placeholder="Enter todo..."
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              }
+              Completed:
+              <input type="checkbox" onChange={(e) => setChecked(e.target.checked)}/>
             </div>
             <div className="btn_container">
               <button onClick={handleSubmit}>Add</button>
@@ -103,15 +125,29 @@ export default function AddTodo() {
             </button>
             <h1>List of Tasks</h1>
                 {
-                  todos.length === 0
-                ? <p>Please add some tasks</p>
-                  : todos.map(
+                  todos.map(
                     (item) => {
                       return (
                         <div style ={{'display':'flex'}}>
-                          <p>{item.name}</p>
-                          <button>Edit</button>
-                          <button>Delete</button>
+                          { edit === true
+                          ?
+                            <div style ={{'display':'flex'}}>
+                              <input type="text" value={item.name} onChange={(e) => setUpdatedTitle(e.target.value)}/>
+                              Completed:
+                              <input type="checkbox" onChange={(e) => setChecked(e.target.checked)}/>
+                            </div>
+                          : <p>{item.name} {checked === true ? <span>--- done</span> : <span>--- not done</span>}</p>
+                          }
+                          {
+                            edit === true
+                             ? <>
+                                <button onClick={() => updateTask(item.id)}>Save</button>
+                                <button onClick={() => setEdit(false)}>Cancel</button>
+                                </>
+                             : <button onClick={() => editTask()}>Edit</button>
+                          }
+
+                          <button onClick={() => deleteTodo(item.id)}>Delete</button>
                         </div>
                       );
                   })
