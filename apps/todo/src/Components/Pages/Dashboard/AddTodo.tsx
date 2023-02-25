@@ -21,8 +21,6 @@ type todostype={
   id:string
 }
 
-
-
 export default function AddTodo() {
   const [title, setTitle] = useState("");
   const [updatedTitle , setUpdatedTitle] = useState(title);
@@ -36,6 +34,7 @@ export default function AddTodo() {
       await addDoc(collection(db, "data"), {
         'name':title,
         'completed': checked
+
       });
       setTitle("");
     }
@@ -55,23 +54,27 @@ export default function AddTodo() {
   }
 
 
-  const todoList: React.SetStateAction<todostype[]> = [];
+  // const todoList: React.SetStateAction<todostype[]> = [];
+  const [todoList, settodoList] = useState<todostype[]>([])
+
 
   useEffect(() => {
     const q = query(collection(db, 'data'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        return todoList.push({
-          ...doc.data(),
-          id: doc.id,
-          name: doc.data().name,
-          completed: doc.data().completed,
-        });
-      });
+      const data=querySnapshot.docs.map(doc=>({...doc.data(),id:doc.id})) as any[]
+      settodoList(data)
+      // querySnapshot.forEach((doc) => {
+        // return todoList.push({
+        //   ...doc.data(),
+        //   id: doc.id,
+        //   name: doc.data().name,
+        //   completed: doc.data().completed,
+        // });
+      // });
       setTodos(todoList);
       console.log(todoList);
     });
-    return () => unsubscribe();
+    // return () => unsubscribe();
   }, []);
 
 
@@ -89,11 +92,15 @@ export default function AddTodo() {
     setEdit(true);
   }
 
+  // const updateTask = async (id:string) => {
+  //   await updateDoc(doc(db, 'data',id),{title:title});
+  // }
+
   const updateTask = async(id: string) => {
     const taskDocRef = doc(db, 'data', id)
     try{
       await updateDoc(taskDocRef, {
-        title: updatedTitle,
+        name: updatedTitle,
         completed: checked
       });
       setEdit(true);
@@ -125,14 +132,14 @@ export default function AddTodo() {
             </button>
             <h1>List of Tasks</h1>
                 {
-                  todos.map(
+                  todoList.map(
                     (item) => {
                       return (
-                        <div style ={{'display':'flex'}}>
+                        <div style ={{'display':'flex'}} key={item.id}>
                           { edit === true
                           ?
-                            <div style ={{'display':'flex'}}>
-                              <input type="text" value={item.name} onChange={(e) => setUpdatedTitle(e.target.value)}/>
+                            <div style ={{'display':'flex'}}  key={item.id}>
+                              <input type="text" value={updatedTitle} onChange={(e) => setUpdatedTitle(e.target.value)}/>
                               Completed:
                               <input type="checkbox" onChange={(e) => setChecked(e.target.checked)}/>
                             </div>
